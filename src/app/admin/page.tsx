@@ -115,11 +115,10 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("rekap")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    activeTab === "rekap"
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === "rekap"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                    }`}
                 >
                   Rekap Nilai
                 </button>
@@ -127,11 +126,10 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("soal")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    activeTab === "soal"
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${activeTab === "soal"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                    }`}
                 >
                   Bank Soal
                 </button>

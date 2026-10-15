@@ -135,3 +135,62 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// DELETE: Hapus semua soal di modul atau multiple selected soal
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const modul = parseInt(searchParams.get("modul") || "1", 10);
+    const clearAll = searchParams.get("clearAll") === "true";
+
+    let numbers: number[] = [];
+    try {
+      const body = await req.json();
+      if (Array.isArray(body.numbers)) {
+        numbers = body.numbers.map((n: any) => parseInt(n, 10)).filter((n: number) => !isNaN(n));
+      }
+    } catch {
+      // no body
+    }
+
+    const db = await connectToDatabase();
+
+    if (clearAll) {
+      if (db) {
+        await Question.deleteMany({ modul });
+      }
+      Array.from(localStore.questions.keys()).forEach((k) => {
+        if (k.startsWith(`${modul}_`)) {
+          localStore.questions.delete(k);
+        }
+      });
+      return NextResponse.json({
+        success: true,
+        message: `Semua soal di Modul ${modul} berhasil dihapus`,
+      });
+    }
+
+    if (numbers.length > 0) {
+      if (db) {
+        await Question.deleteMany({ modul, number: { $in: numbers } });
+      }
+      numbers.forEach((num) => {
+        localStore.questions.delete(`${modul}_${num}`);
+      });
+      return NextResponse.json({
+        success: true,
+        message: `${numbers.length} soal berhasil dihapus`,
+      });
+    }
+
+    return NextResponse.json(
+      { success: false, error: "Tentukan soal yang ingin dihapus" },
+      { status: 400 }
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message || "Gagal menghapus soal" },
+      { status: 500 }
+    );
+  }
+}

@@ -2,7 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 import RichTextEditor from "./RichTextEditor";
-import { Edit2, Trash2, X, RefreshCw, UploadCloud, Plus, PlusCircle, Check } from "lucide-react";
+import {
+  Edit2,
+  Trash2,
+  X,
+  RefreshCw,
+  UploadCloud,
+  Plus,
+  PlusCircle,
+  CheckSquare,
+  Square,
+} from "lucide-react";
 
 interface QuestionItem {
   _id?: string;
@@ -42,6 +52,10 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
   const [isSaving, setIsSaving] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
 
+  // Multi-select & Bulk Delete state
+  const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
   // Form states in modal
   const [editHtml, setEditHtml] = useState("");
   const [editTitle, setEditTitle] = useState("");
@@ -65,6 +79,7 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
 
   const fetchQuestions = async (modulNum = selectedModul) => {
     setLoading(true);
+    setSelectedNumbers([]);
     try {
       const res = await fetch(`/api/questions?modul=${modulNum}`);
       const data = await res.json();
@@ -87,6 +102,83 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
       fetchQuestions(selectedModul);
     }
   }, [selectedModul]);
+
+  // Select all toggle
+  const isAllSelected =
+    questions.length > 0 && selectedNumbers.length === questions.length;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedNumbers([]);
+    } else {
+      setSelectedNumbers(questions.map((q) => q.number));
+    }
+  };
+
+  const handleToggleSelectItem = (number: number) => {
+    if (selectedNumbers.includes(number)) {
+      setSelectedNumbers(selectedNumbers.filter((n) => n !== number));
+    } else {
+      setSelectedNumbers([...selectedNumbers, number]);
+    }
+  };
+
+  // Bulk Delete terpilih
+  const handleDeleteSelected = async () => {
+    if (selectedNumbers.length === 0) return;
+    if (
+      !confirm(
+        `Yakin ingin menghapus ${selectedNumbers.length} soal terpilih dari Modul ${selectedModul}?`
+      )
+    ) {
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    try {
+      const res = await fetch(`/api/questions?modul=${selectedModul}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numbers: selectedNumbers }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchQuestions(selectedModul);
+      } else {
+        alert(data.error || "Gagal menghapus soal");
+      }
+    } catch (err) {
+      console.error("Gagal bulk delete:", err);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  // Hapus semua soal di modul
+  const handleClearAllQuestions = async () => {
+    if (
+      !confirm(
+        `PERINGATAN: Kosongkan SEMUA soal di Modul ${selectedModul}? Tindakan ini tidak dapat dibatalkan.`
+      )
+    ) {
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    try {
+      const res = await fetch(`/api/questions?modul=${selectedModul}&clearAll=true`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchQuestions(selectedModul);
+      }
+    } catch (err) {
+      console.error("Gagal clear all:", err);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
 
   const openCreateQuestionModal = () => {
     const nextNum = questions.length > 0 ? Math.max(...questions.map((q) => q.number)) + 1 : 1;
@@ -315,6 +407,62 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
         </div>
       </div>
 
+      {/* Select All & Bulk Action Bar */}
+      {questions.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 shadow-sm text-xs">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleToggleSelectAll}
+              className="flex items-center gap-1.5 font-semibold text-slate-700 hover:text-blue-600 transition"
+            >
+              {isAllSelected ? (
+                <CheckSquare className="w-4 h-4 text-blue-600" />
+              ) : (
+                <Square className="w-4 h-4 text-slate-400" />
+              )}
+              <span>
+                {isAllSelected ? "Batal Pilih Semua" : "Pilih Semua (Select All)"}
+              </span>
+            </button>
+
+            {selectedNumbers.length > 0 && (
+              <span className="text-slate-500 font-mono">
+                ({selectedNumbers.length} dari {questions.length} dipilih)
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedNumbers.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDeleteSelected}
+                disabled={isBulkDeleting}
+                className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold flex items-center gap-1.5 transition shadow-sm"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>
+                  {isBulkDeleting
+                    ? "Menghapus..."
+                    : `Hapus ${selectedNumbers.length} Soal Terpilih`}
+                </span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleClearAllQuestions}
+              disabled={isBulkDeleting}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 transition"
+              title="Hapus Semua Soal di Modul Ini"
+            >
+              <span>Hapus Semua</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* List Card Soal - Vertikal ke Bawah Semua */}
       {loading ? (
         <div className="py-16 text-center text-slate-500 text-xs bg-white rounded-xl border border-slate-200">
@@ -335,34 +483,54 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
         <div className="flex flex-col gap-3">
           {questions.map((q) => {
             const hasContent = q && q.htmlContent && q.htmlContent.trim().length > 0;
+            const isSelected = selectedNumbers.includes(q.number);
 
             return (
               <div
                 key={q.number}
-                className="w-full bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-blue-400 transition"
+                className={`w-full bg-white border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm transition ${
+                  isSelected
+                    ? "border-blue-500 bg-blue-50/20 ring-1 ring-blue-500"
+                    : "border-slate-200 hover:border-blue-400"
+                }`}
               >
-                {/* Konten Soal */}
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
-                      #{q.number}
-                    </span>
-                    <h4 className="font-bold text-sm text-slate-900">
-                      {q.title || `Soal #${q.number}`}
-                    </h4>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-700 leading-relaxed max-h-28 overflow-y-auto rich-text-content">
-                    {hasContent ? (
-                      <div dangerouslySetInnerHTML={{ __html: q.htmlContent }} />
+                {/* Checkbox & Konten Soal */}
+                <div className="flex items-start gap-3 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSelectItem(q.number)}
+                    className="mt-1 text-slate-400 hover:text-blue-600 transition shrink-0"
+                    title={isSelected ? "Batal pilih" : "Pilih soal ini"}
+                  >
+                    {isSelected ? (
+                      <CheckSquare className="w-4 h-4 text-blue-600" />
                     ) : (
-                      <span className="italic text-slate-400">Belum ada konten soal</span>
+                      <Square className="w-4 h-4 text-slate-400" />
                     )}
+                  </button>
+
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
+                        #{q.number}
+                      </span>
+                      <h4 className="font-bold text-sm text-slate-900">
+                        {q.title || `Soal #${q.number}`}
+                      </h4>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-700 leading-relaxed max-h-28 overflow-y-auto rich-text-content">
+                      {hasContent ? (
+                        <div dangerouslySetInnerHTML={{ __html: q.htmlContent }} />
+                      ) : (
+                        <span className="italic text-slate-400">Belum ada konten soal</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Tombol Aksi */}
-                <div className="flex items-center justify-end gap-2 shrink-0 md:self-center border-t md:border-t-0 pt-2 md:pt-0 border-slate-100">
+                <div className="flex items-center justify-end gap-2 shrink-0 md:self-center border-t md:border-t-0 pt-2 md:pt-0 border-slate-100 pl-7 md:pl-0">
                   <button
                     type="button"
                     onClick={() => handleDeleteQuestion(q.number)}

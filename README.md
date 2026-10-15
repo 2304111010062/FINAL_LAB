@@ -1,4 +1,4 @@
-# FINAL LAB SISMIK - Sistem Ujian Praktikum Cepat & Rekap Nilai Abadi
+# FINAL LAB SISMIK - Sistem Ujian Praktikum Cepat & Rekap Nilai
 
 Aplikasi web full-stack modern yang dibangun menggunakan **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, dan **MongoDB Atlas**, dirancang khusus untuk memfasilitasi ujian praktikum Laboratorium Sistem Mikroprosesor yang digunakan secara bergantian dan berurutan oleh sekitar **160 mahasiswa**.
 
@@ -28,11 +28,11 @@ Aplikasi web full-stack modern yang dibangun menggunakan **Next.js (App Router)*
   - **Fitur Live Preview:** Mode pratinjau langsung untuk melihat persis bagaimana mahasiswa akan melihat soal tersebut.
   - **One-Click Seeding (25 Soal Standar):** Tombol otomatis untuk memuat 25 bank soal otentik seputar Sistem Mikroprosesor (GPIO, Timer/Counter, PWM, ADC/DAC, UART, I2C, SPI, Interrupt, Von Neumann vs Harvard, Assembly 8086, DMA, dll.).
 
-### 4. Sistem Penilaian Cepat & Rekap Nilai Abadi (Persistent Log)
+### 4. Sistem Penilaian Cepat & Rekap Nilai (Persistent Log)
 - **Input Nilai Langsung di Layar:** Dosen atau Asisten penguji langsung memasukkan skor (0 - 100) dan catatan evaluasi di bawah soal yang tampil.
 - **Preset Skor Instan:** Tombol cepat (60, 70, 75, 80, 85, 90, 95, 100) untuk penilaian kilat.
 - **Tombol "Simpan & Lanjut ke Mahasiswa Berikutnya":** Menyimpan data secara abadi (*persistent*) ke MongoDB Atlas, memutar audio sukses, lalu mereset layar untuk mahasiswa berikutnya.
-- **Tabel Rekap Nilai Abadi:**
+- **Tabel Rekap Nilai:**
   - Menampilkan: **No**, **NPM**, **Kelompok**, **Nomor Soal hasil spin**, **Skor/Nilai (badge warna)**, **Penilai**, **Catatan**, dan **Waktu Ujian (WIB)**.
   - **Kartu Metrik & Statistik:** Progres Mahasiswa Dinilai (menuju 160), Rata-rata Nilai, Nilai Tertinggi, dan Nilai Terendah.
   - **Pencarian & Filter:** Cari berdasarkan NPM dan filter per kelompok.
@@ -65,7 +65,7 @@ FINAL LAB SISMIK/
 │   │   └── page.tsx                      # Single-page Ujian Mahasiswa
 │   ├── components/
 │   │   ├── AdminBankSoal.tsx             # Panel kelola 25 bank soal
-│   │   ├── AdminRekapNilai.tsx           # Tabel rekap nilai abadi & analytics
+│   │   ├── AdminRekapNilai.tsx           # Tabel rekap nilai & analytics
 │   │   ├── GradingForm.tsx               # Formulir penilaian cepat dosen
 │   │   ├── Header.tsx                    # Header navigasi & live clock WIB
 │   │   ├── QuestionCard.tsx              # Komponen render soal HTML + font
@@ -77,7 +77,7 @@ FINAL LAB SISMIK/
 │   │   └── sound.ts                      # Web Audio API synthesizer
 │   └── models/
 │       ├── Question.ts                   # Skema MongoDB Soal
-│       └── Submission.ts                 # Skema MongoDB Rekap Nilai Abadi
+│       └── Submission.ts                 # Skema MongoDB Rekap Nilai
 ├── .env.local                            # Konfigurasi variabel lingkungan
 ├── .env.local.example                    # Template konfigurasi
 ├── next.config.mjs                       # Konfigurasi Next.js

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase, localStore } from "@/lib/db";
 import Question from "@/models/Question";
-import { getInitialQuestionsForModul } from "@/lib/mockData";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +23,11 @@ export async function GET(
     const db = await connectToDatabase();
 
     if (db) {
-      let q = await Question.findOne({ modul, number: qNum }).lean();
-      if (!q && modul <= 5) {
-        const initial = getInitialQuestionsForModul(modul).find((i) => i.number === qNum);
-        if (initial) q = initial as any;
-      }
-      return NextResponse.json({ success: true, data: q });
+      const q = await Question.findOne({ modul, number: qNum }).lean();
+      return NextResponse.json({ success: true, data: q || null });
     }
 
-    const localQ =
-      localStore.questions.get(`${modul}_${qNum}`) ||
-      (modul <= 5 ? getInitialQuestionsForModul(modul).find((i) => i.number === qNum) : null);
+    const localQ = localStore.questions.get(`${modul}_${qNum}`) || null;
 
     return NextResponse.json({ success: true, data: localQ });
   } catch (error: any) {

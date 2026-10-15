@@ -7,7 +7,6 @@ import {
   Trash2,
   X,
   RefreshCw,
-  UploadCloud,
   Plus,
   PlusCircle,
   CheckSquare,
@@ -50,7 +49,6 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionItem | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPushing, setIsPushing] = useState(false);
 
   // Multi-select & Bulk Delete state
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
@@ -257,27 +255,6 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
     }
   };
 
-  const handlePushModul = async () => {
-    if (!confirm(`Push/reset bank soal standar untuk Modul ${selectedModul}?`)) return;
-    setIsPushing(true);
-
-    try {
-      const res = await fetch("/api/questions/seed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modul: selectedModul }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchQuestions(selectedModul);
-      }
-    } catch (err) {
-      console.error("Gagal push soal:", err);
-    } finally {
-      setIsPushing(false);
-    }
-  };
-
   const openModuleTitlesModal = () => {
     setTempModules([...modules]);
     setNewModuleTitle("");
@@ -393,16 +370,6 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
             title="Refresh"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          </button>
-
-          <button
-            type="button"
-            onClick={handlePushModul}
-            disabled={isPushing}
-            className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
-          >
-            <UploadCloud className="w-3.5 h-3.5" />
-            <span>{isPushing ? "Memuat..." : `Push Soal Modul ${selectedModul}`}</span>
           </button>
         </div>
       </div>

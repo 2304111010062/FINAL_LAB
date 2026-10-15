@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase, localStore } from "@/lib/db";
 import Question from "@/models/Question";
-import { getInitialQuestionsForModul } from "@/lib/mockData";
 
 export const dynamic = "force-dynamic";
 

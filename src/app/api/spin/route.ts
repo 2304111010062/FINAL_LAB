@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { connectToDatabase, localStore } from "@/lib/db";
 import Question from "@/models/Question";
-import { getInitialQuestionsForModul } from "@/lib/mockData";
 
 export const dynamic = "force-dynamic";
 
@@ -59,12 +58,12 @@ export async function POST(req: Request) {
       },
     });
   } catch (error: any) {
-    const fallbackNumber = Math.floor(Math.random() * 25) + 1;
-    return NextResponse.json({
-      success: true,
-      pickedNumber: fallbackNumber,
-      modul: 1,
-      question: getInitialQuestionsForModul(1).find((q) => q.number === fallbackNumber),
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || "Gagal melakukan spin soal",
+      },
+      { status: 500 }
+    );
   }
 }

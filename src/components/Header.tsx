@@ -32,7 +32,7 @@ export default function Header() {
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2">
           <span className="font-bold text-base text-slate-900 tracking-tight">
-            LAB SISMIK
+            Laboratorium Sistem Mikroprosesor
           </span>
         </Link>
 

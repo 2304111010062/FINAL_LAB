@@ -121,7 +121,7 @@ export default function AdminPage() {
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  Rekap Nilai Abadi
+                  Rekap Nilai
                 </button>
 
                 <button

@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "FINAL LAB SISMIK - Ujian Praktikum Sistem Mikroprosesor",
   description:
-    "Aplikasi Ujian Praktikum Cepat: Spin Wheel Random Pick Soal 1-25, Rich Text Editor, dan Sistem Rekap Nilai Abadi dengan MongoDB Atlas",
+    "Aplikasi Ujian Praktikum Cepat: Spin Wheel Random Pick Soal, Rich Text Editor, dan Sistem Rekap Nilai dengan MongoDB Atlas",
 };
 
 export default function RootLayout({

@@ -31,9 +31,6 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded bg-blue-600 flex items-center justify-center text-white font-bold text-xs">
-            LS
-          </div>
           <span className="font-bold text-base text-slate-900 tracking-tight">
             LAB SISMIK
           </span>

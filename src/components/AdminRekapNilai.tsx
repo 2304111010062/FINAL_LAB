@@ -275,7 +275,6 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
                 <th className="py-2.5 px-3 text-center">Soal</th>
                 <th className="py-2.5 px-3 text-center">Nilai</th>
                 <th className="py-2.5 px-3">Penilai</th>
-                <th className="py-2.5 px-3">Catatan</th>
                 <th className="py-2.5 px-3 min-w-[210px]">Waktu Ujian (Hari, Tgl, Jam)</th>
                 <th className="py-2.5 px-3 text-center">Aksi</th>
               </tr>
@@ -283,13 +282,13 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="py-10 text-center text-slate-400 text-xs">
+                  <td colSpan={9} className="py-10 text-center text-slate-400 text-xs">
                     Memuat data rekap...
                   </td>
                 </tr>
               ) : submissions.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-10 text-center text-slate-400 text-xs">
+                  <td colSpan={9} className="py-10 text-center text-slate-400 text-xs">
                     Belum ada nilai yang tercatat untuk filter ini.
                   </td>
                 </tr>
@@ -326,10 +325,7 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
                           {sub.score}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-600">{sub.evaluator || "-"}</td>
-                      <td className="py-2.5 px-3 text-slate-500 max-w-[160px] truncate" title={sub.notes}>
-                        {sub.notes || "-"}
-                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-800">{sub.evaluator || "-"}</td>
                       {/* Waktu lengkap: Hari, Tanggal, Jam WIB */}
                       <td className="py-2.5 px-3 text-slate-600 font-mono text-[11px] whitespace-nowrap">
                         {fullDateStr}
@@ -393,12 +389,6 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
                   __html: inspectItem.questionSnapshot || "<p>Tidak ada snapshot.</p>",
                 }}
               />
-              {inspectItem.notes && (
-                <p className="text-slate-500">
-                  <span className="font-semibold text-slate-700">Catatan: </span>
-                  {inspectItem.notes}
-                </p>
-              )}
             </div>
           </div>
         </div>

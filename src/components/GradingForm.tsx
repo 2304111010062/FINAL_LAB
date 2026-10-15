@@ -12,6 +12,8 @@ interface GradingFormProps {
   onSavedAndNext: () => void;
 }
 
+const EVALUATOR_CODES = ["NS", "AM", "IP", "RS", "DM", "MM"];
+
 export default function GradingForm({
   modul,
   npm,
@@ -21,12 +23,9 @@ export default function GradingForm({
   onSavedAndNext,
 }: GradingFormProps) {
   const [score, setScore] = useState<string>("");
-  const [notes, setNotes] = useState<string>("");
-  const [evaluator, setEvaluator] = useState<string>("Dosen / Asisten");
+  const [evaluator, setEvaluator] = useState<string>("NS");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const scorePresets = [60, 70, 75, 80, 85, 90, 95, 100];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +50,7 @@ export default function GradingForm({
           questionNumber,
           questionSnapshot: questionContent || "",
           score: numericScore,
-          notes,
+          notes: "",
           evaluator,
         }),
       });
@@ -77,7 +76,7 @@ export default function GradingForm({
     >
       <div className="flex items-center justify-between pb-3 border-b border-slate-200">
         <div>
-          <h3 className="font-bold text-slate-900 text-sm">Penilaian Dosen / Asisten</h3>
+          <h3 className="font-bold text-slate-900 text-sm">Penilaian</h3>
           <p className="text-xs text-slate-500">
             {npm} • {kelompok} • Modul {modul}
           </p>
@@ -104,57 +103,29 @@ export default function GradingForm({
             min="0"
             max="100"
             required
-            placeholder="Contoh: 85"
+            placeholder="Masukkan nilai..."
             value={score}
             onChange={(e) => setScore(e.target.value)}
             className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-base font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
-
-          {/* Preset Buttons */}
-          <div className="mt-2 flex flex-wrap gap-1">
-            {scorePresets.map((val) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setScore(val.toString())}
-                className={`px-2 py-1 rounded text-xs font-medium border transition ${
-                  score === val.toString()
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                }`}
-              >
-                {val}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Input Penilai & Catatan */}
-        <div className="space-y-2">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Nama Penilai
-            </label>
-            <input
-              type="text"
-              value={evaluator}
-              onChange={(e) => setEvaluator(e.target.value)}
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Catatan (Opsional)
-            </label>
-            <input
-              type="text"
-              placeholder="Catatan..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+        {/* Dropdown Kode Penilai: NS, AM, IP, RS, DM, MM */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
+            Kode Penilai <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={evaluator}
+            onChange={(e) => setEvaluator(e.target.value)}
+            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {EVALUATOR_CODES.map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -168,7 +139,7 @@ export default function GradingForm({
               : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
           }`}
         >
-          {isSubmitting ? "Menyimpan..." : "Simpan & Lanjut ke Mahasiswa Berikutnya"}
+          {isSubmitting ? "Menyimpan..." : "Simpan & Lanjut"}
         </button>
       </div>
     </form>

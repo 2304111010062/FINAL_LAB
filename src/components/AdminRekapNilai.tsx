@@ -16,6 +16,11 @@ interface SubmissionItem {
   createdAt: string;
 }
 
+interface ModuleItem {
+  modul: number;
+  title: string;
+}
+
 interface StatsData {
   totalStudents: number;
   targetCapacity: number;
@@ -48,6 +53,7 @@ export function formatFullDateTime(dateString: string | Date | undefined): strin
 
 export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNilaiProps) {
   const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
+  const [modules, setModules] = useState<ModuleItem[]>([]);
   const [moduleTitles, setModuleTitles] = useState<Record<number, string>>({});
   const [stats, setStats] = useState<StatsData>({
     totalStudents: 0,
@@ -64,11 +70,12 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
   const [selectedKelompok, setSelectedKelompok] = useState("all");
   const [inspectItem, setInspectItem] = useState<SubmissionItem | null>(null);
 
-  const fetchModuleTitles = async () => {
+  const fetchModules = async () => {
     try {
       const res = await fetch("/api/modules");
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
+        setModules(data.data);
         const map: Record<number, string> = {};
         data.data.forEach((m: any) => {
           map[m.modul] = m.title;
@@ -102,7 +109,7 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
   };
 
   useEffect(() => {
-    fetchModuleTitles();
+    fetchModules();
   }, []);
 
   useEffect(() => {
@@ -151,7 +158,7 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
           <span className="text-[11px] font-semibold text-slate-500 uppercase">Total Dinilai</span>
           <div className="flex items-baseline gap-1 mt-1">
             <span className="text-2xl font-bold text-slate-900">{stats.totalStudents}</span>
-            <span className="text-xs text-slate-400">/ 500 Mhs</span>
+            <span className="text-xs text-slate-400">Mahasiswa</span>
           </div>
         </div>
 
@@ -180,16 +187,16 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
       {/* Filter & Aksi */}
       <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 flex-1">
-          {/* Filter Modul 1-5 dengan custom title */}
+          {/* Filter Modul Dinamis dengan judul dari database */}
           <select
             value={selectedModul}
             onChange={(e) => setSelectedModul(e.target.value)}
             className="bg-white text-slate-800 text-xs rounded-lg px-2.5 py-1.5 border border-slate-300 font-semibold focus:outline-none"
           >
             <option value="all">Semua Modul</option>
-            {[1, 2, 3, 4, 5].map((m) => (
-              <option key={m} value={m}>
-                Modul {m}: {moduleTitles[m] || `Modul ${m}`}
+            {modules.map((m) => (
+              <option key={m.modul} value={m.modul}>
+                Modul {m.modul}: {m.title}
               </option>
             ))}
           </select>
@@ -295,6 +302,11 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
                       <td className="py-2.5 px-3 text-center text-slate-400">{idx + 1}</td>
                       <td className="py-2.5 px-3 font-semibold text-blue-700">
                         Modul {sub.modul || 1}
+                        {moduleTitles[sub.modul] && (
+                          <span className="block text-[10px] font-normal text-slate-500">
+                            {moduleTitles[sub.modul]}
+                          </span>
+                        )}
                       </td>
                       <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{sub.npm}</td>
                       <td className="py-2.5 px-3">{sub.kelompok}</td>

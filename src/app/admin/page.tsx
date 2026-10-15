@@ -133,7 +133,7 @@ export default function AdminPage() {
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  Bank Soal (1 - 25)
+                  Bank Soal
                 </button>
               </div>
 

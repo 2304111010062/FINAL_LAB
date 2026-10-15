@@ -20,7 +20,6 @@ const SubmissionSchema = new Schema<ISubmission>(
       required: true,
       default: 1,
       min: 1,
-      max: 5,
       index: true,
     },
     npm: {
@@ -39,7 +38,6 @@ const SubmissionSchema = new Schema<ISubmission>(
       type: Number,
       required: [true, "Nomor soal hasil spin wajib ada"],
       min: 1,
-      max: 25,
       index: true,
     },
     questionSnapshot: {

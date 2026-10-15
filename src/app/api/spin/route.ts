@@ -11,37 +11,60 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const { npm, kelompok } = body;
     const modul = parseInt(body.modul || "1", 10);
-    const targetModul = isNaN(modul) || modul < 1 || modul > 5 ? 1 : modul;
+    const targetModul = isNaN(modul) || modul < 1 ? 1 : modul;
 
-    // CSPRNG (Cryptographically Secure Pseudorandom Number Generator)
-    const pickedNumber = crypto.randomInt(1, 26);
-
-    let questionData = null;
     const db = await connectToDatabase();
 
+    // Dapatkan semua soal yang tersedia di modul ini
+    let availableQuestions: any[] = [];
     if (db) {
-      questionData = await Question.findOne({ modul: targetModul, number: pickedNumber }).lean();
-      if (!questionData) {
-        const fallback = getInitialQuestionsForModul(targetModul).find((q) => q.number === pickedNumber);
-        if (fallback) questionData = fallback;
+      availableQuestions = await Question.find({ modul: targetModul }).sort({ number: 1 }).lean();
+      if ((!availableQuestions || availableQuestions.length === 0) && targetModul <= 5) {
+        const initial = getInitialQuestionsForModul(targetModul);
+        await Question.insertMany(initial);
+        availableQuestions = await Question.find({ modul: targetModul }).sort({ number: 1 }).lean();
       }
     } else {
-      questionData =
-        localStore.questions.get(`${targetModul}_${pickedNumber}`) ||
-        getInitialQuestionsForModul(targetModul).find((q) => q.number === pickedNumber);
+      if (targetModul <= 5) {
+        const initialForModul = getInitialQuestionsForModul(targetModul);
+        initialForModul.forEach((q) => {
+          const key = `${targetModul}_${q.number}`;
+          if (!localStore.questions.has(key)) {
+            localStore.questions.set(key, { ...q, updatedAt: new Date() });
+          }
+        });
+      }
+      Array.from(localStore.questions.entries()).forEach(([key, val]) => {
+        if (key.startsWith(`${targetModul}_`)) {
+          availableQuestions.push(val);
+        }
+      });
     }
+
+    if (!availableQuestions || availableQuestions.length === 0) {
+      // Buat default soal jika benar-benar kosong
+      availableQuestions = [
+        {
+          modul: targetModul,
+          number: 1,
+          title: `Soal #1 Modul ${targetModul}`,
+          htmlContent: `<p>Soal nomor 1 Modul ${targetModul} belum memiliki konten.</p>`,
+          fontFamily: "Arial",
+        },
+      ];
+    }
+
+    // Acak murni dari soal-soal yang ada (CSPRNG)
+    const randomIndex = crypto.randomInt(0, availableQuestions.length);
+    const selectedQ = availableQuestions[randomIndex];
+    const pickedNumber = selectedQ.number;
 
     return NextResponse.json({
       success: true,
       pickedNumber,
       modul: targetModul,
-      question: questionData || {
-        modul: targetModul,
-        number: pickedNumber,
-        title: `Soal #${pickedNumber}`,
-        htmlContent: `<p>Soal nomor ${pickedNumber} Modul ${targetModul} belum memiliki konten.</p>`,
-        fontFamily: "Arial",
-      },
+      totalAvailable: availableQuestions.length,
+      question: selectedQ,
       metadata: {
         timestamp: new Date().toISOString(),
         npm: npm || "",

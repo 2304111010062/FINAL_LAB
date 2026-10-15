@@ -14,7 +14,6 @@ const ModuleConfigSchema = new Schema<IModuleConfig>(
       required: true,
       unique: true,
       min: 1,
-      max: 5,
     },
     title: {
       type: String,

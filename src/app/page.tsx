@@ -6,7 +6,13 @@ import SpinWheel from "@/components/SpinWheel";
 import QuestionCard from "@/components/QuestionCard";
 import GradingForm from "@/components/GradingForm";
 
+interface ModuleItem {
+  modul: number;
+  title: string;
+}
+
 export default function StudentExamPage() {
+  const [modules, setModules] = useState<ModuleItem[]>([]);
   const [modul, setModul] = useState<number>(1);
   const [npm, setNpm] = useState<string>("");
   const [kelompok, setKelompok] = useState<string>("Kelompok 1");
@@ -17,6 +23,19 @@ export default function StudentExamPage() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const isReadyToSpin = npm.trim().length >= 3 && kelompok.trim().length > 0;
+
+  const fetchModules = async () => {
+    try {
+      const res = await fetch("/api/modules");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        setModules(data.data);
+        setModul(data.data[0].modul);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const fetchCount = async () => {
     try {
@@ -31,6 +50,7 @@ export default function StudentExamPage() {
   };
 
   useEffect(() => {
+    fetchModules();
     fetchCount();
   }, []);
 
@@ -74,7 +94,7 @@ export default function StudentExamPage() {
         <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-200">
           <span>Ujian Praktikum Sistem Mikroprosesor</span>
           <span className="font-semibold text-slate-700">
-            Selesai: {savedCount} / 500 Mahasiswa
+            Selesai: {savedCount} Mahasiswa
           </span>
         </div>
 
@@ -86,7 +106,7 @@ export default function StudentExamPage() {
               Identitas Mahasiswa
             </h2>
 
-            {/* Pilihan Modul 1-5 */}
+            {/* Pilihan Modul Dinamis dari Database */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Pilih Modul
@@ -97,11 +117,21 @@ export default function StudentExamPage() {
                 onChange={(e) => setModul(parseInt(e.target.value, 10))}
                 className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
-                <option value={1}>Modul 1: GPIO & Register</option>
-                <option value={2}>Modul 2: Timer & Counter</option>
-                <option value={3}>Modul 3: Interupsi & ADC</option>
-                <option value={4}>Modul 4: Komunikasi Serial</option>
-                <option value={5}>Modul 5: PWM & Kontrol Motor</option>
+                {modules.length > 0 ? (
+                  modules.map((m) => (
+                    <option key={m.modul} value={m.modul}>
+                      Modul {m.modul}: {m.title}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value={1}>Modul 1: I/O DEVICE</option>
+                    <option value={2}>Modul 2: 7 SEGMENT</option>
+                    <option value={3}>Modul 3: ADDRESSING MODE</option>
+                    <option value={4}>Modul 4: JAM</option>
+                    <option value={5}>Modul 5</option>
+                  </>
+                )}
               </select>
             </div>
 

@@ -17,14 +17,12 @@ const QuestionSchema = new Schema<IQuestion>(
       required: true,
       default: 1,
       min: 1,
-      max: 5,
       index: true,
     },
     number: {
       type: Number,
       required: true,
       min: 1,
-      max: 25,
       index: true,
     },
     title: {

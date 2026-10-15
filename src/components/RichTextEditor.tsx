@@ -11,11 +11,12 @@ import {
   AlignJustify,
   List,
   ListOrdered,
+  Type,
 } from "lucide-react";
 
 interface RichTextEditorProps {
   initialContent: string;
-  initialFontFamily?: "Arial" | "Courier New" | string;
+  initialFontFamily?: string;
   onChange: (htmlContent: string, fontFamily: string) => void;
   placeholder?: string;
 }
@@ -27,7 +28,7 @@ export default function RichTextEditor({
   placeholder = "Tuliskan soal di sini...",
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const [fontFamily, setFontFamily] = useState<string>(initialFontFamily || "Arial");
+  const [selectedFont, setSelectedFont] = useState<string>("Arial");
   const isUpdatingFromProps = useRef(false);
 
   useEffect(() => {
@@ -38,15 +39,11 @@ export default function RichTextEditor({
     }
   }, [initialContent]);
 
-  useEffect(() => {
-    if (initialFontFamily) setFontFamily(initialFontFamily);
-  }, [initialFontFamily]);
-
   const handleInput = useCallback(() => {
     if (isUpdatingFromProps.current || !editorRef.current) return;
     const html = editorRef.current.innerHTML;
-    onChange(html, fontFamily);
-  }, [fontFamily, onChange]);
+    onChange(html, "Arial");
+  }, [onChange]);
 
   const executeCommand = (command: string, value: string | undefined = undefined) => {
     document.execCommand(command, false, value);
@@ -56,10 +53,25 @@ export default function RichTextEditor({
     }
   };
 
-  const handleFontChange = (newFont: string) => {
-    setFontFamily(newFont);
+  // Terapkan font ke teks yang sedang diblok (selection)
+  const applyFontToSelection = (fontName: string) => {
+    setSelectedFont(fontName);
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+      // Jika tidak ada teks yang diblok, ubah font default atau beri tahu user
+      document.execCommand("fontName", false, fontName);
+      if (editorRef.current) {
+        editorRef.current.focus();
+        handleInput();
+      }
+      return;
+    }
+
+    // Ada teks yang diblok: eksekusi fontName pada seleksi teks tersebut
+    document.execCommand("fontName", false, fontName);
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML, newFont);
+      editorRef.current.focus();
+      handleInput();
     }
   };
 
@@ -73,17 +85,26 @@ export default function RichTextEditor({
     <div className="border border-slate-300 rounded-lg bg-white overflow-hidden shadow-sm">
       {/* Simple Toolbar */}
       <div className="p-2 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center gap-1.5 text-xs">
-        {/* Font Selection (Arial & Courier New) */}
-        <div className="flex items-center gap-1 mr-2">
-          <span className="text-slate-500 font-medium text-[11px]">Font:</span>
-          <select
-            value={fontFamily}
-            onChange={(e) => handleFontChange(e.target.value)}
-            className="bg-white text-slate-800 text-xs font-medium rounded border border-slate-300 px-2 py-1 outline-none"
+        {/* Tombol Font Khusus Seleksi / Blok */}
+        <div className="flex items-center gap-1 mr-1">
+          <Type className="w-3.5 h-3.5 text-slate-500" />
+          <span className="text-slate-500 font-medium text-[11px]">Font Seleksi:</span>
+          <button
+            type="button"
+            title="Terapkan font Arial ke teks yang diblok"
+            onClick={() => applyFontToSelection("Arial")}
+            className="px-2 py-1 rounded border border-slate-300 bg-white hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 text-slate-700 font-sans font-medium transition text-[11px]"
           >
-            <option value="Arial">Arial</option>
-            <option value="Courier New">Courier New</option>
-          </select>
+            Arial
+          </button>
+          <button
+            type="button"
+            title="Terapkan font Courier New ke teks yang diblok"
+            onClick={() => applyFontToSelection("Courier New")}
+            className="px-2 py-1 rounded border border-slate-300 bg-white hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 text-slate-700 font-mono font-medium transition text-[11px]"
+          >
+            Courier New
+          </button>
         </div>
 
         <div className="h-4 w-px bg-slate-300 mx-1" />
@@ -91,7 +112,7 @@ export default function RichTextEditor({
         {/* Formatting */}
         <button
           type="button"
-          title="Tebal"
+          title="Tebal (Ctrl+B)"
           onClick={() => executeCommand("bold")}
           className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition"
         >
@@ -99,7 +120,7 @@ export default function RichTextEditor({
         </button>
         <button
           type="button"
-          title="Miring"
+          title="Miring (Ctrl+I)"
           onClick={() => executeCommand("italic")}
           className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition"
         >
@@ -107,7 +128,7 @@ export default function RichTextEditor({
         </button>
         <button
           type="button"
-          title="Garis Bawah"
+          title="Garis Bawah (Ctrl+U)"
           onClick={() => executeCommand("underline")}
           className="p-1.5 rounded hover:bg-slate-200 text-slate-700 transition"
         >
@@ -171,18 +192,16 @@ export default function RichTextEditor({
         </button>
       </div>
 
+      <div className="px-3 py-1 bg-blue-50/50 border-b border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
+        <span>💡 Tips: Blok teks tertentu lalu klik <b>Arial</b> atau <b>Courier New</b> untuk mengombinasikan font.</span>
+      </div>
+
       {/* Editor Content Area */}
       <div
         ref={editorRef}
         contentEditable
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        style={{
-          fontFamily:
-            fontFamily === "Courier New"
-              ? "'Courier New', Courier, monospace"
-              : "Arial, sans-serif",
-        }}
         className="min-h-[220px] max-h-[380px] p-4 overflow-y-auto text-slate-900 bg-white focus:outline-none rich-text-content leading-relaxed text-sm"
         data-placeholder={placeholder}
       />

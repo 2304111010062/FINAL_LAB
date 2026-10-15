@@ -2,15 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import RichTextEditor from "./RichTextEditor";
-import { Edit2, Trash2, X, RefreshCw, UploadCloud, Settings, Edit3 } from "lucide-react";
+import { Edit2, Trash2, X, RefreshCw, UploadCloud, Plus, PlusCircle, Check } from "lucide-react";
 
 interface QuestionItem {
   _id?: string;
   modul: number;
   number: number;
   title: string;
-  fontFamily: "Arial" | "Courier New" | string;
+  fontFamily: string;
   htmlContent: string;
+}
+
+interface ModuleItem {
+  modul: number;
+  title: string;
 }
 
 interface AdminBankSoalProps {
@@ -18,46 +23,43 @@ interface AdminBankSoalProps {
 }
 
 export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) {
+  const [modules, setModules] = useState<ModuleItem[]>([]);
   const [selectedModul, setSelectedModul] = useState<number>(
     typeof initialModul === "number" ? initialModul : 1
   );
-  const [moduleTitles, setModuleTitles] = useState<Record<number, string>>({
-    1: "GPIO & Register",
-    2: "Timer & Counter",
-    3: "Interupsi & ADC",
-    4: "Komunikasi Serial",
-    5: "PWM & Kontrol Motor",
-  });
+
+  // Modal edit / tambah modul
   const [isEditingModules, setIsEditingModules] = useState(false);
-  const [tempTitles, setTempTitles] = useState<Record<number, string>>({});
+  const [tempModules, setTempModules] = useState<ModuleItem[]>([]);
+  const [newModuleTitle, setNewModuleTitle] = useState("");
   const [isSavingTitles, setIsSavingTitles] = useState(false);
 
+  // Soal state
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionItem | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   // Form states in modal
-  const [editFontFamily, setEditFontFamily] = useState<"Arial" | "Courier New">("Arial");
   const [editHtml, setEditHtml] = useState("");
   const [editTitle, setEditTitle] = useState("");
+  const [editNumber, setEditNumber] = useState<number>(1);
+  const [isNewQuestion, setIsNewQuestion] = useState(false);
 
-  const fetchModuleTitles = async () => {
+  const fetchModules = async () => {
     try {
       const res = await fetch("/api/modules");
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
-        const map: Record<number, string> = {};
-        data.data.forEach((m: any) => {
-          map[m.modul] = m.title;
-        });
-        setModuleTitles(map);
+        setModules(data.data);
+        if (data.data.length > 0 && !data.data.some((m: any) => m.modul === selectedModul)) {
+          setSelectedModul(data.data[0].modul);
+        }
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("Gagal memuat modul:", err);
     }
   };
 
@@ -77,19 +79,37 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
   };
 
   useEffect(() => {
-    fetchModuleTitles();
+    fetchModules();
   }, []);
 
   useEffect(() => {
-    fetchQuestions(selectedModul);
+    if (selectedModul) {
+      fetchQuestions(selectedModul);
+    }
   }, [selectedModul]);
+
+  const openCreateQuestionModal = () => {
+    const nextNum = questions.length > 0 ? Math.max(...questions.map((q) => q.number)) + 1 : 1;
+    setSelectedQuestion({
+      modul: selectedModul,
+      number: nextNum,
+      title: `Soal #${nextNum}`,
+      fontFamily: "Arial",
+      htmlContent: "",
+    });
+    setEditNumber(nextNum);
+    setEditTitle(`Soal #${nextNum}`);
+    setEditHtml("");
+    setIsNewQuestion(true);
+    setIsEditing(true);
+  };
 
   const openEditModal = (q: QuestionItem) => {
     setSelectedQuestion(q);
+    setEditNumber(q.number);
     setEditTitle(q.title || `Soal #${q.number}`);
-    setEditFontFamily((q.fontFamily as "Arial" | "Courier New") || "Arial");
     setEditHtml(q.htmlContent || "");
-    setShowSettings(false);
+    setIsNewQuestion(false);
     setIsEditing(true);
   };
 
@@ -98,13 +118,19 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
     setIsSaving(true);
 
     try {
-      const res = await fetch(`/api/questions/${selectedQuestion.number}`, {
-        method: "PUT",
+      const url = isNewQuestion
+        ? "/api/questions"
+        : `/api/questions/${editNumber}`;
+      const method = isNewQuestion ? "POST" : "PUT";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           modul: selectedModul,
-          title: editTitle || `Soal #${selectedQuestion.number}`,
-          fontFamily: editFontFamily,
+          number: editNumber,
+          title: editTitle || `Soal #${editNumber}`,
+          fontFamily: "Arial",
           htmlContent: editHtml,
         }),
       });
@@ -123,8 +149,8 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
     }
   };
 
-  const handleDeleteCard = async (qNum: number) => {
-    if (!confirm(`Hapus/kosongkan isi Soal #${qNum} Modul ${selectedModul}?`)) return;
+  const handleDeleteQuestion = async (qNum: number) => {
+    if (!confirm(`Hapus permanen Soal #${qNum} dari Modul ${selectedModul}?`)) return;
 
     try {
       const res = await fetch(`/api/questions/${qNum}?modul=${selectedModul}`, {
@@ -140,7 +166,7 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
   };
 
   const handlePushModul = async () => {
-    if (!confirm(`Push/reset 25 bank soal standar untuk Modul ${selectedModul}?`)) return;
+    if (!confirm(`Push/reset bank soal standar untuk Modul ${selectedModul}?`)) return;
     setIsPushing(true);
 
     try {
@@ -161,27 +187,58 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
   };
 
   const openModuleTitlesModal = () => {
-    setTempTitles({ ...moduleTitles });
+    setTempModules([...modules]);
+    setNewModuleTitle("");
     setIsEditingModules(true);
+  };
+
+  const handleAddModule = async () => {
+    if (!newModuleTitle.trim()) return;
+    try {
+      const res = await fetch("/api/modules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newModuleTitle.trim() }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setTempModules([...tempModules, data.data]);
+        setNewModuleTitle("");
+        fetchModules();
+      }
+    } catch (err) {
+      console.error("Gagal menambah modul:", err);
+    }
+  };
+
+  const handleDeleteModule = async (modulNum: number) => {
+    if (!confirm(`Hapus Modul ${modulNum} beserta seluruh soal di dalamnya?`)) return;
+    try {
+      const res = await fetch(`/api/modules?modul=${modulNum}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTempModules(tempModules.filter((m) => m.modul !== modulNum));
+        fetchModules();
+      }
+    } catch (err) {
+      console.error("Gagal menghapus modul:", err);
+    }
   };
 
   const handleSaveModuleTitles = async () => {
     setIsSavingTitles(true);
     try {
-      const payload = [1, 2, 3, 4, 5].map((m) => ({
-        modul: m,
-        title: tempTitles[m] || `Modul ${m}`,
-      }));
-
       const res = await fetch("/api/modules", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modules: payload }),
+        body: JSON.stringify({ modules: tempModules }),
       });
 
       const data = await res.json();
       if (data.success) {
-        setModuleTitles({ ...tempTitles });
+        setModules([...tempModules]);
         setIsEditingModules(false);
       } else {
         alert(data.error || "Gagal menyimpan");
@@ -197,33 +254,43 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
     <div className="space-y-4">
       {/* Modul Selector & Actions */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 shadow-sm">
-        {/* Modul 1 to 5 Filter Pills */}
+        {/* Modul Filter Pills Dinamis */}
         <div className="flex flex-wrap items-center gap-1.5">
-          {[1, 2, 3, 4, 5].map((m) => (
+          {modules.map((m) => (
             <button
-              key={m}
+              key={m.modul}
               type="button"
-              onClick={() => setSelectedModul(m)}
+              onClick={() => setSelectedModul(m.modul)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                selectedModul === m
+                selectedModul === m.modul
                   ? "bg-blue-600 text-white shadow-sm"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
-              Modul {m}: {moduleTitles[m] || `Modul ${m}`}
+              Modul {m.modul}: {m.title}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 self-end lg:self-auto">
-          {/* Tombol Edit Semua Judul Modul */}
+        <div className="flex items-center gap-2 self-end lg:self-auto flex-wrap">
+          {/* Tombol Kelola & Tambah Modul */}
           <button
             type="button"
             onClick={openModuleTitlesModal}
             className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 transition"
           >
-            <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-            <span>Edit Judul Modul</span>
+            <Plus className="w-3.5 h-3.5 text-blue-600" />
+            <span>Kelola / Tambah Modul</span>
+          </button>
+
+          {/* Tombol Tambah Soal di Modul Ini */}
+          <button
+            type="button"
+            onClick={openCreateQuestionModal}
+            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 transition shadow-sm"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Tambah Soal</span>
           </button>
 
           <button
@@ -248,51 +315,59 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
         </div>
       </div>
 
-      {/* Grid 25 Soal */}
+      {/* List Card Soal - Vertikal ke Bawah Semua */}
       {loading ? (
-        <div className="py-16 text-center text-slate-500 text-xs">
+        <div className="py-16 text-center text-slate-500 text-xs bg-white rounded-xl border border-slate-200">
           Memuat daftar soal Modul {selectedModul}...
         </div>
+      ) : questions.length === 0 ? (
+        <div className="py-16 text-center text-slate-500 text-xs bg-white rounded-xl border border-slate-200 space-y-2">
+          <p>Belum ada soal untuk Modul {selectedModul}.</p>
+          <button
+            type="button"
+            onClick={openCreateQuestionModal}
+            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold inline-flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" /> Tambah Soal Pertama
+          </button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Array.from({ length: 25 }, (_, i) => i + 1).map((num) => {
-            const q = questions.find((item) => item.number === num);
+        <div className="flex flex-col gap-3">
+          {questions.map((q) => {
             const hasContent = q && q.htmlContent && q.htmlContent.trim().length > 0;
 
             return (
               <div
-                key={num}
-                className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-sm hover:border-blue-400 transition"
+                key={q.number}
+                className="w-full bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-blue-400 transition"
               >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="w-6 h-6 rounded bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">
-                      #{num}
+                {/* Konten Soal */}
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
+                      #{q.number}
                     </span>
-                    <span className="text-[11px] font-mono text-slate-500">
-                      {q?.fontFamily || "Arial"}
-                    </span>
+                    <h4 className="font-bold text-sm text-slate-900">
+                      {q.title || `Soal #${q.number}`}
+                    </h4>
                   </div>
 
-                  <div className="p-2.5 rounded bg-slate-50 border border-slate-100 text-xs text-slate-600 line-clamp-3 min-h-[56px]">
+                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-700 leading-relaxed max-h-28 overflow-y-auto rich-text-content">
                     {hasContent ? (
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: q?.htmlContent.replace(/<[^>]+>/g, " ").slice(0, 130) + "...",
-                        }}
-                      />
+                      <div dangerouslySetInnerHTML={{ __html: q.htmlContent }} />
                     ) : (
-                      <span className="italic text-slate-400">Belum ada konten</span>
+                      <span className="italic text-slate-400">Belum ada konten soal</span>
                     )}
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                {/* Tombol Aksi */}
+                <div className="flex items-center justify-end gap-2 shrink-0 md:self-center border-t md:border-t-0 pt-2 md:pt-0 border-slate-100">
                   <button
                     type="button"
-                    onClick={() => handleDeleteCard(num)}
-                    className="px-2.5 py-1 rounded bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 text-xs font-medium flex items-center gap-1 transition"
-                    title="Kosongkan Soal Ini"
+                    onClick={() => handleDeleteQuestion(q.number)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 text-xs font-medium flex items-center gap-1 transition"
+                    title="Hapus Soal Ini"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Hapus</span>
@@ -300,21 +375,11 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
 
                   <button
                     type="button"
-                    onClick={() =>
-                      openEditModal(
-                        q || {
-                          modul: selectedModul,
-                          number: num,
-                          title: `Soal #${num}`,
-                          fontFamily: "Arial",
-                          htmlContent: "",
-                        }
-                      )
-                    }
-                    className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1 transition"
+                    onClick={() => openEditModal(q)}
+                    className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1 transition shadow-sm"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
-                    <span>Edit</span>
+                    <span>Edit Soal</span>
                   </button>
                 </div>
               </div>
@@ -323,13 +388,13 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
         </div>
       )}
 
-      {/* Modal Edit Semua Judul Modul */}
+      {/* Modal Kelola & Tambah Modul */}
       {isEditingModules && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-lg shadow-xl overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
             <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <h3 className="font-bold text-slate-900 text-sm">
-                Edit Semua Judul Modul (Modul 1 s.d. 5)
+                Kelola Modul Praktikum (CRUD Modul)
               </h3>
               <button
                 type="button"
@@ -340,23 +405,62 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
               </button>
             </div>
 
-            <div className="p-5 space-y-3">
-              {[1, 2, 3, 4, 5].map((m) => (
-                <div key={m}>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Judul Modul {m}
-                  </label>
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+              {/* Form Tambah Modul Baru */}
+              <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 space-y-2">
+                <label className="block text-xs font-bold text-blue-900">
+                  + Tambah Modul Baru
+                </label>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    value={tempTitles[m] || ""}
-                    onChange={(e) =>
-                      setTempTitles({ ...tempTitles, [m]: e.target.value })
-                    }
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder={`Nama Modul ${m}...`}
+                    value={newModuleTitle}
+                    onChange={(e) => setNewModuleTitle(e.target.value)}
+                    placeholder="Contoh: Modul 6: INTERFACING SENSOR"
+                    className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
+                  <button
+                    type="button"
+                    onClick={handleAddModule}
+                    disabled={!newModuleTitle.trim()}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-xs font-semibold transition"
+                  >
+                    Tambah
+                  </button>
                 </div>
-              ))}
+              </div>
+
+              {/* Daftar Modul yang Ada */}
+              <div className="space-y-2.5">
+                <span className="text-xs font-semibold text-slate-600">Daftar Modul Saat Ini:</span>
+                {tempModules.map((m, idx) => (
+                  <div key={m.modul} className="flex items-center gap-2">
+                    <span className="w-16 text-xs font-bold text-slate-700 shrink-0">
+                      Modul {m.modul}
+                    </span>
+                    <input
+                      type="text"
+                      value={m.title}
+                      onChange={(e) => {
+                        const updated = [...tempModules];
+                        updated[idx] = { ...m, title: e.target.value };
+                        setTempModules(updated);
+                      }}
+                      className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    {tempModules.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteModule(m.modul)}
+                        className="p-1.5 rounded text-slate-400 hover:text-red-600 transition"
+                        title={`Hapus Modul ${m.modul}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
@@ -373,85 +477,68 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
                 disabled={isSavingTitles}
                 className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm"
               >
-                {isSavingTitles ? "Menyimpan..." : "Simpan Semua Judul Modul"}
+                {isSavingTitles ? "Menyimpan..." : "Simpan Perubahan Judul"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Edit Soal */}
+      {/* Modal Edit / Tambah Soal */}
       {isEditing && selectedQuestion && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-xl w-full max-w-3xl flex flex-col shadow-xl overflow-hidden max-h-[90vh]">
             <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
-                  #{selectedQuestion.number}
+                  #{editNumber}
                 </span>
                 <h3 className="font-bold text-slate-900 text-sm">
-                  Edit Soal #{selectedQuestion.number} • Modul {selectedModul}
+                  {isNewQuestion ? "Tambah Soal Baru" : `Edit Soal #${editNumber}`} • Modul {selectedModul}
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowSettings(!showSettings)}
-                  className={`p-1.5 rounded transition text-xs font-medium flex items-center gap-1 ${
-                    showSettings ? "bg-slate-200 text-slate-800" : "text-slate-500 hover:bg-slate-100"
-                  }`}
-                  title="Pengaturan Tambahan"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Seting</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="p-1 rounded text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+            {/* Input Header Soal */}
+            <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Nomor Soal</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editNumber}
+                  onChange={(e) => setEditNumber(parseInt(e.target.value, 10) || 1)}
+                  className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-semibold text-slate-700 mb-1">Judul / Topik Soal</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder={`Contoh: Register DDRx, PORTx, dan PINx`}
+                />
               </div>
             </div>
 
-            {showSettings && (
-              <div className="p-3 bg-slate-50 border-b border-slate-200 grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Font Utama</label>
-                  <select
-                    value={editFontFamily}
-                    onChange={(e) => setEditFontFamily(e.target.value as "Arial" | "Courier New")}
-                    className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs"
-                  >
-                    <option value="Arial">Arial</option>
-                    <option value="Courier New">Courier New</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Judul Singkat</label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs"
-                    placeholder={`Soal #${selectedQuestion.number}`}
-                  />
-                </div>
-              </div>
-            )}
-
+            {/* Editor dengan Per-Selection Font */}
             <div className="p-4 overflow-y-auto">
               <RichTextEditor
                 initialContent={editHtml}
-                initialFontFamily={editFontFamily}
-                onChange={(html, font) => {
+                onChange={(html) => {
                   setEditHtml(html);
-                  setEditFontFamily(font as "Arial" | "Courier New");
                 }}
-                placeholder="Ketik soal praktikum di sini..."
+                placeholder="Ketik isi soal praktikum di sini. Anda bisa memblok teks dan memilih font Arial / Courier New secara kombinasi..."
               />
             </div>
 
@@ -469,7 +556,7 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
                 disabled={isSaving}
                 className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shadow-sm"
               >
-                {isSaving ? "Menyimpan..." : "Simpan Soal"}
+                {isSaving ? "Menyimpan..." : isNewQuestion ? "Tambah Soal" : "Simpan Soal"}
               </button>
             </div>
           </div>

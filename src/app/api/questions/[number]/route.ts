@@ -14,9 +14,9 @@ export async function GET(
     const modul = parseInt(searchParams.get("modul") || "1", 10);
     const qNum = parseInt(params.number, 10);
 
-    if (isNaN(qNum) || qNum < 1 || qNum > 25) {
+    if (isNaN(qNum) || qNum < 1) {
       return NextResponse.json(
-        { success: false, error: "Nomor soal tidak valid (1-25)" },
+        { success: false, error: "Nomor soal tidak valid" },
         { status: 400 }
       );
     }
@@ -25,7 +25,7 @@ export async function GET(
 
     if (db) {
       let q = await Question.findOne({ modul, number: qNum }).lean();
-      if (!q) {
+      if (!q && modul <= 5) {
         const initial = getInitialQuestionsForModul(modul).find((i) => i.number === qNum);
         if (initial) q = initial as any;
       }
@@ -34,7 +34,7 @@ export async function GET(
 
     const localQ =
       localStore.questions.get(`${modul}_${qNum}`) ||
-      getInitialQuestionsForModul(modul).find((i) => i.number === qNum);
+      (modul <= 5 ? getInitialQuestionsForModul(modul).find((i) => i.number === qNum) : null);
 
     return NextResponse.json({ success: true, data: localQ });
   } catch (error: any) {
@@ -48,9 +48,9 @@ export async function PUT(
 ) {
   try {
     const qNum = parseInt(params.number, 10);
-    if (isNaN(qNum) || qNum < 1 || qNum > 25) {
+    if (isNaN(qNum) || qNum < 1) {
       return NextResponse.json(
-        { success: false, error: "Nomor soal tidak valid (1-25)" },
+        { success: false, error: "Nomor soal tidak valid" },
         { status: 400 }
       );
     }
@@ -101,7 +101,7 @@ export async function PUT(
   }
 }
 
-// DELETE: Hapus / reset isi soal dari card depan
+// DELETE: Hapus total soal ini dari modul
 export async function DELETE(
   req: Request,
   { params }: { params: { number: string } }
@@ -114,28 +114,14 @@ export async function DELETE(
     const db = await connectToDatabase();
 
     if (db) {
-      await Question.findOneAndUpdate(
-        { modul, number: qNum },
-        {
-          htmlContent: "<p>Konten soal belum diisi.</p>",
-          title: `Soal #${qNum}`,
-          fontFamily: "Arial",
-        }
-      );
+      await Question.deleteOne({ modul, number: qNum });
     }
 
-    localStore.questions.set(`${modul}_${qNum}`, {
-      modul,
-      number: qNum,
-      title: `Soal #${qNum}`,
-      htmlContent: "<p>Konten soal belum diisi.</p>",
-      fontFamily: "Arial",
-      updatedAt: new Date(),
-    });
+    localStore.questions.delete(`${modul}_${qNum}`);
 
     return NextResponse.json({
       success: true,
-      message: `Soal #${qNum} Modul ${modul} berhasil dikosongkan`,
+      message: `Soal #${qNum} Modul ${modul} berhasil dihapus`,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

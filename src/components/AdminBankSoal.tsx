@@ -219,7 +219,7 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
         body: JSON.stringify({
           modul: selectedModul,
           number: editNumber,
-          title: editTitle || `Soal #${editNumber}`,
+          title: `Soal #${editNumber}`,
           fontFamily: "Arial",
           htmlContent: editHtml,
         }),
@@ -633,25 +633,15 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
             </div>
 
             {/* Input Header Soal */}
-            <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div>
+            <div className="p-4 bg-slate-50 border-b border-slate-200 text-xs">
+              <div className="w-32">
                 <label className="block font-semibold text-slate-700 mb-1">Nomor Soal</label>
                 <input
                   type="number"
                   min="1"
                   value={editNumber}
                   onChange={(e) => setEditNumber(parseInt(e.target.value, 10) || 1)}
-                  className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-700 mb-1">Judul / Topik Soal</label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder={`Contoh: Register DDRx, PORTx, dan PINx`}
+                  className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400 font-bold"
                 />
               </div>
             </div>

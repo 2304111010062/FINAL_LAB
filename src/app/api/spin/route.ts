@@ -19,21 +19,7 @@ export async function POST(req: Request) {
     let availableQuestions: any[] = [];
     if (db) {
       availableQuestions = await Question.find({ modul: targetModul }).sort({ number: 1 }).lean();
-      if ((!availableQuestions || availableQuestions.length === 0) && targetModul <= 5) {
-        const initial = getInitialQuestionsForModul(targetModul);
-        await Question.insertMany(initial);
-        availableQuestions = await Question.find({ modul: targetModul }).sort({ number: 1 }).lean();
-      }
     } else {
-      if (targetModul <= 5) {
-        const initialForModul = getInitialQuestionsForModul(targetModul);
-        initialForModul.forEach((q) => {
-          const key = `${targetModul}_${q.number}`;
-          if (!localStore.questions.has(key)) {
-            localStore.questions.set(key, { ...q, updatedAt: new Date() });
-          }
-        });
-      }
       Array.from(localStore.questions.entries()).forEach(([key, val]) => {
         if (key.startsWith(`${targetModul}_`)) {
           availableQuestions.push(val);

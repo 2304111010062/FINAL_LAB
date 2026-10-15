@@ -439,7 +439,7 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
                 type="button"
                 onClick={handleDeleteSelected}
                 disabled={isBulkDeleting}
-                className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold flex items-center gap-1.5 transition shadow-sm"
+                className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold flex items-center gap-1.5 transition shadow-sm"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>
@@ -449,16 +449,6 @@ export default function AdminBankSoal({ initialModul = 1 }: AdminBankSoalProps) 
                 </span>
               </button>
             )}
-
-            <button
-              type="button"
-              onClick={handleClearAllQuestions}
-              disabled={isBulkDeleting}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 transition"
-              title="Hapus Semua Soal di Modul Ini"
-            >
-              <span>Hapus Semua</span>
-            </button>
           </div>
         </div>
       )}

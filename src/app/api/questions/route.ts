@@ -14,14 +14,7 @@ export async function GET(req: Request) {
     const db = await connectToDatabase();
 
     if (db) {
-      let questions = await Question.find({ modul: targetModul }).sort({ number: 1 }).lean();
-
-      // If module 1-5 has no questions yet, auto-seed with 25 initial questions
-      if ((!questions || questions.length === 0) && targetModul <= 5) {
-        const initial = getInitialQuestionsForModul(targetModul);
-        await Question.insertMany(initial);
-        questions = await Question.find({ modul: targetModul }).sort({ number: 1 }).lean();
-      }
+      const questions = await Question.find({ modul: targetModul }).sort({ number: 1 }).lean();
 
       return NextResponse.json({
         success: true,
@@ -33,16 +26,6 @@ export async function GET(req: Request) {
     }
 
     // Local in-memory fallback
-    if (targetModul <= 5) {
-      const initialForModul = getInitialQuestionsForModul(targetModul);
-      initialForModul.forEach((q) => {
-        const key = `${targetModul}_${q.number}`;
-        if (!localStore.questions.has(key)) {
-          localStore.questions.set(key, { ...q, updatedAt: new Date() });
-        }
-      });
-    }
-
     const fallbackList: any[] = [];
     Array.from(localStore.questions.entries()).forEach(([key, val]) => {
       if (key.startsWith(`${targetModul}_`)) {

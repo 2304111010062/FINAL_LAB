@@ -75,9 +75,6 @@ export default function AdminPage() {
 
               <div className="text-center mb-4">
                 <h1 className="text-base font-bold text-slate-900">Login Admin Lab Sismik</h1>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Gunakan password: <code className="font-mono text-blue-600">modul1</code>, <code className="font-mono text-blue-600">modul2</code>, dst. atau password admin
-                </p>
               </div>
 
               {pinError && (

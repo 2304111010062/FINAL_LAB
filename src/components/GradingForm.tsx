@@ -12,7 +12,7 @@ interface GradingFormProps {
   onSavedAndNext: () => void;
 }
 
-const EVALUATOR_CODES = ["NS", "AM", "IP", "RS", "DM", "MM"];
+const EVALUATOR_CODES = ["NS", "AM", "IP", "RS", "DM", "MM", "FT"];
 
 export default function GradingForm({
   modul,

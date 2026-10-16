@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Download, Search, RefreshCw, Trash2, Eye, X } from "lucide-react";
+import { Download, Search, RefreshCw, Trash2, Eye, X, Edit, Check } from "lucide-react";
 
 interface SubmissionItem {
   _id: string;
@@ -69,6 +69,20 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
   );
   const [selectedKelompok, setSelectedKelompok] = useState("all");
   const [inspectItem, setInspectItem] = useState<SubmissionItem | null>(null);
+
+  // Edit Modal State
+  const [editItem, setEditItem] = useState<SubmissionItem | null>(null);
+  const [editForm, setEditForm] = useState({
+    npm: "",
+    kelompok: "",
+    modul: 1,
+    questionNumber: 1,
+    score: 0,
+    evaluator: "",
+    notes: "",
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   const fetchModules = async () => {
     try {
@@ -147,6 +161,50 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
       if (data.success) fetchSubmissions();
     } catch (err) {
       console.error("Gagal menghapus semua:", err);
+    }
+  };
+
+  const handleOpenEdit = (item: SubmissionItem) => {
+    setEditError("");
+    setEditItem(item);
+    setEditForm({
+      npm: item.npm,
+      kelompok: item.kelompok,
+      modul: item.modul || 1,
+      questionNumber: item.questionNumber || 1,
+      score: item.score || 0,
+      evaluator: item.evaluator || "",
+      notes: item.notes || "",
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editItem) return;
+    setEditSaving(true);
+    setEditError("");
+
+    try {
+      const res = await fetch("/api/submissions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editItem._id,
+          ...editForm,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Gagal memperbarui data mahasiswa");
+      }
+
+      setEditItem(null);
+      fetchSubmissions();
+    } catch (err: any) {
+      setEditError(err.message || "Terjadi kesalahan saat menyimpan perubahan");
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -332,6 +390,14 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
                       </td>
                       <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(sub)}
+                            className="p-1 rounded text-slate-400 hover:text-amber-600"
+                            title="Edit Data Mahasiswa"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
                           {sub.questionSnapshot && (
                             <button
                               type="button"
@@ -360,6 +426,171 @@ export default function AdminRekapNilai({ initialModul = "all" }: AdminRekapNila
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editItem && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-lg flex flex-col shadow-xl overflow-hidden">
+            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">
+                  Edit Data & Nilai Mahasiswa
+                </h3>
+                <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                  Waktu Ujian: {formatFullDateTime(editItem.createdAt)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditItem(null)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-5 space-y-4 text-xs">
+              {editError && (
+                <div className="p-2.5 rounded bg-red-50 border border-red-200 text-red-700">
+                  {editError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    NPM Mahasiswa <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.npm}
+                    onChange={(e) => setEditForm({ ...editForm, npm: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="240410501..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Kelompok <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.kelompok}
+                    onChange={(e) => setEditForm({ ...editForm, kelompok: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="Kelompok 25"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Modul
+                  </label>
+                  <select
+                    value={editForm.modul}
+                    onChange={(e) => setEditForm({ ...editForm, modul: parseInt(e.target.value, 10) })}
+                    className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    {modules.length > 0 ? (
+                      modules.map((m) => (
+                        <option key={m.modul} value={m.modul}>
+                          Modul {m.modul}
+                        </option>
+                      ))
+                    ) : (
+                      [1, 2, 3, 4, 5, 6].map((num) => (
+                        <option key={num} value={num}>
+                          Modul {num}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Nomor Soal
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={editForm.questionNumber}
+                    onChange={(e) => setEditForm({ ...editForm, questionNumber: parseInt(e.target.value, 10) || 1 })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Nilai (0 - 100) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    required
+                    value={editForm.score}
+                    onChange={(e) => setEditForm({ ...editForm, score: parseInt(e.target.value, 10) || 0 })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Penilai / Inisial Asisten
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.evaluator}
+                    onChange={(e) => setEditForm({ ...editForm, evaluator: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="NS, AM, MM..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Catatan (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.notes}
+                    onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="Catatan tambahan..."
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditItem(null)}
+                  className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {editSaving ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       {inspectItem && (

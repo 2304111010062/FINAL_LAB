@@ -178,6 +178,90 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, modul, npm, kelompok, questionNumber, score, notes, evaluator } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "ID submission wajib ada" }, { status: 400 });
+    }
+
+    if (!npm || npm.trim() === "") {
+      return NextResponse.json({ success: false, error: "NPM wajib diisi" }, { status: 400 });
+    }
+
+    if (!kelompok || kelompok.trim() === "") {
+      return NextResponse.json({ success: false, error: "Kelompok wajib diisi" }, { status: 400 });
+    }
+
+    const numericScore = Number(score);
+    if (isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
+      return NextResponse.json(
+        { success: false, error: "Nilai harus berupa angka 0 - 100" },
+        { status: 400 }
+      );
+    }
+
+    const updatePayload: any = {
+      npm: npm.trim().toUpperCase(),
+      kelompok: kelompok.trim(),
+      score: numericScore,
+      notes: notes !== undefined ? notes.trim() : "",
+      evaluator: evaluator !== undefined ? evaluator.trim() : "Dosen / Asisten",
+    };
+
+    if (modul !== undefined) {
+      updatePayload.modul = parseInt(modul, 10);
+    }
+    if (questionNumber !== undefined && questionNumber !== "") {
+      updatePayload.questionNumber = Number(questionNumber);
+    }
+
+    const db = await connectToDatabase();
+
+    if (db) {
+      const updated = await Submission.findByIdAndUpdate(
+        id,
+        { $set: updatePayload },
+        { new: true, runValidators: true }
+      );
+
+      if (!updated) {
+        return NextResponse.json({ success: false, error: "Data mahasiswa tidak ditemukan" }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Data mahasiswa ${updated.npm} berhasil diperbarui`,
+        data: updated,
+      });
+    }
+
+    // Local fallback
+    const idx = localStore.submissions.findIndex((s) => s._id?.toString() === id);
+    if (idx !== -1) {
+      localStore.submissions[idx] = {
+        ...localStore.submissions[idx],
+        ...updatePayload,
+        updatedAt: new Date(),
+      };
+      return NextResponse.json({
+        success: true,
+        message: `Data mahasiswa ${updatePayload.npm} berhasil diperbarui (local)`,
+        data: localStore.submissions[idx],
+      });
+    }
+
+    return NextResponse.json({ success: false, error: "Data tidak ditemukan di local storage" }, { status: 404 });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message || "Gagal memperbarui data" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

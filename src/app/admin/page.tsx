@@ -94,7 +94,7 @@ export default function AdminPage() {
                     type="text"
                     autoFocus
                     required
-                    placeholder="LahSismikTE24"
+                    placeholder="Isi username..."
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"

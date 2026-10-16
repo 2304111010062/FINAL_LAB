@@ -9,8 +9,9 @@ import { LogOut, Lock } from "lucide-react";
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [assignedModul, setAssignedModul] = useState<number | "all">("all");
-  const [pin, setPin] = useState<string>("");
-  const [pinError, setPinError] = useState<string | null>(null);
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"soal" | "rekap">("rekap");
 
@@ -27,28 +28,28 @@ export default function AdminPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPinError(null);
+    setLoginError(null);
     setIsVerifying(true);
 
     try {
       const res = await fetch("/api/admin/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Password salah");
+        throw new Error(data.error || "Username atau password salah");
       }
 
       sessionStorage.setItem("admin_auth_token", data.token);
       sessionStorage.setItem("admin_modul", data.modul?.toString() || "all");
       setAssignedModul(data.modul || "all");
       setIsAuthenticated(true);
-      setPin("");
+      setPassword("");
     } catch (err: any) {
-      setPinError(err.message || "Gagal masuk");
+      setLoginError(err.message || "Gagal masuk");
     } finally {
       setIsVerifying(false);
     }
@@ -66,7 +67,7 @@ export default function AdminPage() {
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6 space-y-5">
         {!isAuthenticated ? (
-          /* Login Sederhana */
+          /* Login Form */
           <div className="min-h-[60vh] flex items-center justify-center">
             <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
               <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
@@ -75,31 +76,49 @@ export default function AdminPage() {
 
               <div className="text-center mb-4">
                 <h1 className="text-base font-bold text-slate-900">Login Admin Lab Sismik</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Silakan masukkan username dan password</p>
               </div>
 
-              {pinError && (
-                <div className="mb-3 p-2 rounded bg-red-50 border border-red-200 text-red-600 text-xs text-center">
-                  {pinError}
+              {loginError && (
+                <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs text-center">
+                  {loginError}
                 </div>
               )}
 
-              <form onSubmit={handleLogin} className="space-y-3">
+              <form onSubmit={handleLogin} className="space-y-3.5">
                 <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    Username
+                  </label>
                   <input
-                    type="password"
+                    type="text"
                     autoFocus
                     required
+                    placeholder="labsismik"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
                     placeholder="Masukkan password..."
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  disabled={isVerifying || pin.trim() === ""}
-                  className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm"
+                  disabled={isVerifying || password.trim() === ""}
+                  className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm disabled:opacity-50"
                 >
                   {isVerifying ? "Memverifikasi..." : "Masuk"}
                 </button>

@@ -4,7 +4,7 @@ import crypto from "crypto";
 export const dynamic = "force-dynamic";
 
 // Kredensial Tunggal Terpusat:
-const REQUIRED_USER = "LahSismikTE24";
+const REQUIRED_USER = "LabSismikTE24";
 const REQUIRED_PASS = "FinalLabSismik@digital123";
 const AUTH_SECRET = process.env.AUTH_SECRET || "sismik_secure_secret_key_2026_usk";
 
